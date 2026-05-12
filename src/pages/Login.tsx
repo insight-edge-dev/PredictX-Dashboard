@@ -1,0 +1,74 @@
+import { useState } from 'react';
+import { ADMIN_USER, ADMIN_PASS } from '../config';
+
+export default function Login({ onLogin }: { onLogin: () => void }) {
+  const [user, setUser]   = useState('');
+  const [pass, setPass]   = useState('');
+  const [error, setError] = useState('');
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (user === ADMIN_USER && pass === ADMIN_PASS) {
+      sessionStorage.setItem('cricvora_admin', '1');
+      onLogin();
+    } else {
+      setError('Invalid credentials');
+    }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#020810' }}>
+      <div style={{ background: '#08111E', border: '1px solid #142234', borderRadius: 16, padding: 40, width: 380 }}>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: -1, marginBottom: 4 }}>
+            <span style={{ color: '#fff' }}>Cric</span><span style={{ color: '#FBBF24' }}>vora</span>
+          </div>
+          <div style={{ color: '#4A6580', fontSize: 13 }}>Admin Dashboard</div>
+        </div>
+
+        <form onSubmit={submit}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', color: '#7E97B0', fontSize: 12, fontWeight: 700, marginBottom: 6, letterSpacing: 0.5 }}>
+              USERNAME
+            </label>
+            <input
+              value={user}
+              onChange={e => setUser(e.target.value)}
+              placeholder="admin"
+              style={inputStyle}
+            />
+          </div>
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ display: 'block', color: '#7E97B0', fontSize: 12, fontWeight: 700, marginBottom: 6, letterSpacing: 0.5 }}>
+              PASSWORD
+            </label>
+            <input
+              type="password"
+              value={pass}
+              onChange={e => setPass(e.target.value)}
+              placeholder="••••••••"
+              style={inputStyle}
+            />
+          </div>
+          {error && <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</p>}
+          <button type="submit" style={btnStyle}>
+            Sign In
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '10px 14px',
+  background: '#0E1C2E', border: '1px solid #142234', borderRadius: 8,
+  color: '#fff', fontSize: 14, outline: 'none',
+};
+
+const btnStyle: React.CSSProperties = {
+  width: '100%', padding: '12px',
+  background: '#FBBF24', border: 'none', borderRadius: 8,
+  color: '#000', fontWeight: 800, fontSize: 15, cursor: 'pointer',
+};
