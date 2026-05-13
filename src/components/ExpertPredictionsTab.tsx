@@ -9,7 +9,9 @@ interface Prediction {
   analysis: string; is_published: boolean; created_at: string; updated_at: string;
 }
 
-const EMPTY_FORM = { match_id: '', match_label: '', predicted_winner: '', confidence: 'HIGH' as const, analysis: '', is_published: true };
+type Confidence = 'HIGH' | 'MEDIUM' | 'LOW';
+const EMPTY_FORM: { match_id: string; match_label: string; predicted_winner: string; confidence: Confidence; analysis: string; is_published: boolean } =
+  { match_id: '', match_label: '', predicted_winner: '', confidence: 'HIGH', analysis: '', is_published: true };
 
 export default function ExpertPredictionsTab() {
   const [predictions,     setPredictions]     = useState<Prediction[]>([]);
