@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from '../api';
+import { colors, labelStyle, inputStyle, btnStyle, badge } from '../theme';
 
 interface Notification {
   id:           string;
@@ -8,7 +9,7 @@ interface Notification {
   scheduled_at: string;
 }
 
-export default function NotificationsTab() {
+export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [title,    setTitle]    = useState('');
   const [body,     setBody]     = useState('');
@@ -21,8 +22,12 @@ export default function NotificationsTab() {
   const [msg,      setMsg]      = useState('');
 
   const load = async () => {
-    const res = await api.get<{ notifications: Notification[] }>('/admin/notifications');
-    setNotifications(res.notifications ?? []);
+    try {
+      const res = await api.get<{ notifications: Notification[] }>('/admin/notifications');
+      setNotifications(res.notifications ?? []);
+    } catch (e: any) {
+      setMsg('Error loading notifications: ' + e.message);
+    }
   };
 
   useEffect(() => { load(); }, []);
@@ -58,12 +63,22 @@ export default function NotificationsTab() {
 
   const fmt = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
+  const { sentCount, scheduledCount } = useMemo(() => {
+    const now = Date.now();
+    let sent = 0, scheduled = 0;
+    for (const n of notifications) {
+      if (new Date(n.scheduled_at).getTime() > now) scheduled++;
+      else sent++;
+    }
+    return { sentCount: sent, scheduledCount: scheduled };
+  }, [notifications]);
+
   return (
     <div>
-      <h2 style={{ color: '#fff', fontSize: 20, fontWeight: 800, marginBottom: 24 }}>🔔 Send Notification</h2>
+      <h2 style={{ color: colors.text, fontSize: 20, fontWeight: 800, marginBottom: 24 }}>🔔 Send Notification</h2>
 
       {/* Compose form */}
-      <form onSubmit={send} style={{ background: '#08111E', border: '1px solid #142234', borderRadius: 12, padding: 24, marginBottom: 32 }}>
+      <form onSubmit={send} style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 24, marginBottom: 32 }}>
         <div style={{ marginBottom: 16 }}>
           <label style={labelStyle}>TITLE</label>
           <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Match alert, announcement..." style={inputStyle} maxLength={80} />
@@ -72,24 +87,24 @@ export default function NotificationsTab() {
           <label style={labelStyle}>MESSAGE</label>
           <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="Write your notification message..." rows={3}
             style={{ ...inputStyle, resize: 'vertical', minHeight: 80 }} maxLength={300} />
-          <div style={{ color: '#4A6580', fontSize: 11, marginTop: 4 }}>{body.length}/300</div>
+          <div style={{ color: colors.textDim, fontSize: 11, marginTop: 4 }}>{body.length}/300</div>
         </div>
 
         {/* Image URL (optional) */}
         <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>IMAGE URL <span style={{ color: '#4A6580', fontWeight: 400 }}>(optional)</span></label>
+          <label style={labelStyle}>IMAGE URL <span style={{ color: colors.textDim, fontWeight: 400 }}>(optional)</span></label>
           <input value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://..." style={inputStyle} />
         </div>
 
         {/* Link URL (optional) */}
         <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>LINK URL <span style={{ color: '#4A6580', fontWeight: 400 }}>(optional)</span></label>
+          <label style={labelStyle}>LINK URL <span style={{ color: colors.textDim, fontWeight: 400 }}>(optional)</span></label>
           <input value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://..." style={inputStyle} />
         </div>
 
         {/* Link title (optional) */}
         <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>LINK BUTTON LABEL <span style={{ color: '#4A6580', fontWeight: 400 }}>(optional — defaults to "Open Link")</span></label>
+          <label style={labelStyle}>LINK BUTTON LABEL <span style={{ color: colors.textDim, fontWeight: 400 }}>(optional — defaults to "Open Link")</span></label>
           <input value={linkTitle} onChange={e => setLinkTitle(e.target.value)} placeholder="e.g. Join Telegram, Watch Highlights..." style={inputStyle} maxLength={40} />
         </div>
 
@@ -98,8 +113,8 @@ export default function NotificationsTab() {
           <label style={labelStyle}>WHEN TO SEND</label>
           <div style={{ display: 'flex', gap: 12, marginBottom: sendAt === 'schedule' ? 12 : 0 }}>
             {['now', 'schedule'].map(opt => (
-              <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: sendAt === opt ? '#FBBF24' : '#7E97B0', fontSize: 14 }}>
-                <input type="radio" checked={sendAt === opt} onChange={() => setSendAt(opt)} style={{ accentColor: '#FBBF24' }} />
+              <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', color: sendAt === opt ? colors.accent : colors.textMuted, fontSize: 14 }}>
+                <input type="radio" checked={sendAt === opt} onChange={() => setSendAt(opt)} style={{ accentColor: colors.accent }} />
                 {opt === 'now' ? 'Send now' : 'Schedule'}
               </label>
             ))}
@@ -109,33 +124,39 @@ export default function NotificationsTab() {
           )}
         </div>
 
-        {msg && <p style={{ color: msg.startsWith('✓') ? '#16a34a' : '#ef4444', fontSize: 13, marginBottom: 12 }}>{msg}</p>}
+        {msg && <p style={{ color: msg.startsWith('✓') ? colors.success : colors.danger, fontSize: 13, marginBottom: 12 }}>{msg}</p>}
         <button type="submit" disabled={loading || !title.trim() || !body.trim()} style={btnStyle(loading || !title.trim() || !body.trim())}>
           {loading ? 'Sending…' : 'Send Notification'}
         </button>
       </form>
 
       {/* Sent history */}
-      <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Sent / Scheduled ({notifications.length})</h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        <h3 style={{ color: colors.text, fontSize: 16, fontWeight: 700, margin: 0 }}>Sent / Scheduled ({notifications.length})</h3>
+        <span style={badge(colors.success)}>{sentCount} sent</span>
+        <span style={badge(colors.warning)}>{scheduledCount} scheduled</span>
+      </div>
       {notifications.length === 0
-        ? <p style={{ color: '#4A6580', fontSize: 14 }}>No notifications yet.</p>
-        : notifications.map(n => (
-          <div key={n.id} style={{ background: '#08111E', border: '1px solid #142234', borderRadius: 10, padding: '14px 18px', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: '#fff', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{n.title}</div>
-              <div style={{ color: '#7E97B0', fontSize: 13, lineHeight: 1.5 }}>{n.body}</div>
-              <div style={{ color: '#4A6580', fontSize: 11, marginTop: 6 }}>{fmt(n.scheduled_at)}</div>
+        ? <p style={{ color: colors.textDim, fontSize: 14 }}>No notifications yet.</p>
+        : notifications.map(n => {
+          const isScheduled = new Date(n.scheduled_at).getTime() > Date.now();
+          return (
+            <div key={n.id} style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: '14px 18px', marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                  <span style={{ color: colors.text, fontWeight: 700, fontSize: 14 }}>{n.title}</span>
+                  <span style={badge(isScheduled ? colors.warning : colors.success)}>{isScheduled ? 'SCHEDULED' : 'SENT'}</span>
+                </div>
+                <div style={{ color: colors.textMuted, fontSize: 13, lineHeight: 1.5 }}>{n.body}</div>
+                <div style={{ color: colors.textDim, fontSize: 11, marginTop: 6 }}>{fmt(n.scheduled_at)}</div>
+              </div>
+              <button onClick={() => del(n.id)} style={{ background: colors.danger + '15', border: `1px solid ${colors.danger}30`, color: colors.danger, borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>
+                Delete
+              </button>
             </div>
-            <button onClick={() => del(n.id)} style={{ background: '#ef444415', border: '1px solid #ef444430', color: '#ef4444', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12 }}>
-              Delete
-            </button>
-          </div>
-        ))
+          );
+        })
       }
     </div>
   );
 }
-
-const labelStyle: React.CSSProperties = { display: 'block', color: '#7E97B0', fontSize: 11, fontWeight: 700, marginBottom: 6, letterSpacing: 0.8 };
-const inputStyle: React.CSSProperties = { width: '100%', padding: '10px 14px', background: '#0E1C2E', border: '1px solid #142234', borderRadius: 8, color: '#fff', fontSize: 14, outline: 'none' };
-const btnStyle = (disabled: boolean): React.CSSProperties => ({ padding: '11px 24px', background: disabled ? '#1A2A3A' : '#FBBF24', border: 'none', borderRadius: 8, color: disabled ? '#4A6580' : '#000', fontWeight: 800, fontSize: 14, cursor: disabled ? 'not-allowed' : 'pointer' });

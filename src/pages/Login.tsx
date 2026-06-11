@@ -9,7 +9,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (user === ADMIN_USER && pass === ADMIN_PASS) {
-      sessionStorage.setItem('cricvora_admin', '1');
+      sessionStorage.setItem('predictx_admin', '1');
       onLogin();
     } else {
       setError('Invalid credentials');
@@ -21,8 +21,8 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
       <div style={{ background: '#08111E', border: '1px solid #142234', borderRadius: 16, padding: 40, width: 380 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: -1, marginBottom: 4 }}>
-            <span style={{ color: '#fff' }}>Cric</span><span style={{ color: '#FBBF24' }}>vora</span>
+          <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: -1.5, marginBottom: 4 }}>
+            <span style={{ color: '#fff' }}>Predict</span><span style={{ color: '#FBBF24' }}>X</span>
           </div>
           <div style={{ color: '#4A6580', fontSize: 13 }}>Admin Dashboard</div>
         </div>
