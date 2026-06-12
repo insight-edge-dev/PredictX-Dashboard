@@ -3,11 +3,12 @@ import Sidebar from '../components/Sidebar';
 import OverviewPage from './OverviewPage';
 import PredictionsPage from './PredictionsPage';
 import NotificationsPage from './NotificationsPage';
+import BannersPage from './BannersPage';
 import UsersPage from './UsersPage';
 import MatchesPage from './MatchesPage';
 import { colors } from '../theme';
 
-export type Page = 'overview' | 'predictions' | 'notifications' | 'users' | 'matches';
+export type Page = 'overview' | 'predictions' | 'notifications' | 'banners' | 'users' | 'matches';
 
 export default function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [page, setPage] = useState<Page>('overview');
@@ -20,6 +21,7 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
         {page === 'overview'      && <OverviewPage onNavigate={setPage} />}
         {page === 'predictions'   && <PredictionsPage />}
         {page === 'notifications' && <NotificationsPage />}
+        {page === 'banners'       && <BannersPage />}
         {page === 'users'         && <UsersPage />}
         {page === 'matches'       && <MatchesPage />}
       </div>

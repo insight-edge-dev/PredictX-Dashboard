@@ -5,6 +5,7 @@ const NAV_ITEMS: { page: Page; label: string; icon: string }[] = [
   { page: 'overview',     label: 'Overview',     icon: '📊' },
   { page: 'predictions',  label: 'Predictions',  icon: '🎯' },
   { page: 'notifications',label: 'Notifications',icon: '🔔' },
+  { page: 'banners',      label: 'Banners',      icon: '🖼️' },
   { page: 'users',        label: 'Users',        icon: '👥' },
   { page: 'matches',      label: 'Matches',      icon: '🏏' },
 ];
