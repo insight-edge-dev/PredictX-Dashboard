@@ -8,6 +8,8 @@ const NAV_ITEMS: { page: Page; label: string; icon: string }[] = [
   { page: 'banners',      label: 'Banners',      icon: '🖼️' },
   { page: 'users',        label: 'Users',        icon: '👥' },
   { page: 'matches',      label: 'Matches',      icon: '🏏' },
+  { page: 'health',       label: 'System Health',icon: '🩺' },
+  { page: 'home-content', label: 'Home Content', icon: '🏠' },
 ];
 
 export default function Sidebar({ page, onNavigate, onLogout }: {

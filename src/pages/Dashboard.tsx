@@ -6,9 +6,11 @@ import NotificationsPage from './NotificationsPage';
 import BannersPage from './BannersPage';
 import UsersPage from './UsersPage';
 import MatchesPage from './MatchesPage';
+import HealthPage from './HealthPage';
+import HomeContentPage from './HomeContentPage';
 import { colors } from '../theme';
 
-export type Page = 'overview' | 'predictions' | 'notifications' | 'banners' | 'users' | 'matches';
+export type Page = 'overview' | 'predictions' | 'notifications' | 'banners' | 'users' | 'matches' | 'health' | 'home-content';
 
 export default function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [page, setPage] = useState<Page>('overview');
@@ -24,6 +26,8 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
         {page === 'banners'       && <BannersPage />}
         {page === 'users'         && <UsersPage />}
         {page === 'matches'       && <MatchesPage />}
+        {page === 'health'        && <HealthPage />}
+        {page === 'home-content'  && <HomeContentPage />}
       </div>
     </div>
   );
