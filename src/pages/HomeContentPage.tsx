@@ -38,6 +38,16 @@ interface AccuracyRow {
   override:           number | null;
 }
 
+interface LeagueCardRow {
+  slug:          string;
+  name:          string;
+  short:         string;
+  flag:          string;
+  sport:         'cricket' | 'football';
+  is_visible:    boolean;
+  display_order: number;
+}
+
 const emptyFactForm = { sport: 'cricket' as Fact['sport'], icon: '🏏', text: '', color: '#F59E0B', isActive: true };
 
 // ── Facts ───────────────────────────────────────────────────────
@@ -282,6 +292,72 @@ function LeaguePrioritySection() {
   );
 }
 
+// ── League Cards (Discovery "PredictX Prediction" section) ───────
+
+function LeagueCardsSection() {
+  const [cards, setCards] = useState<LeagueCardRow[]>([]);
+  const [msg, setMsg] = useState('');
+
+  const load = () => {
+    api.get<{ cards: LeagueCardRow[] }>('/admin/league-cards')
+      .then(res => setCards((res.cards ?? []).sort((a, b) => a.display_order - b.display_order)))
+      .catch((e: any) => setMsg('Error loading league cards: ' + e.message));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const toggleVisible = async (c: LeagueCardRow) => {
+    await api.put(`/admin/league-cards/${c.slug}`, { visible: !c.is_visible });
+    load();
+  };
+
+  const move = async (index: number, dir: -1 | 1) => {
+    const target = index + dir;
+    if (target < 0 || target >= cards.length) return;
+    const reordered = [...cards];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    setCards(reordered);
+    await api.put('/admin/league-cards/reorder', { order: reordered.map(c => c.slug) });
+  };
+
+  return (
+    <div>
+      <h3 style={{ color: colors.text, fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
+        📈 PredictX Prediction Cards
+      </h3>
+      <p style={{ color: colors.textDim, fontSize: 13, marginBottom: 16 }}>
+        Controls which league/tournament cards show in Discovery's "PredictX Prediction" section,
+        and in what order. Accuracy % for each is set below under Prediction Accuracy.
+      </p>
+      {msg && <p style={{ color: colors.danger, fontSize: 13, marginBottom: 12 }}>{msg}</p>}
+      {cards.length === 0
+        ? <p style={{ color: colors.textDim, fontSize: 14 }}>No league cards found.</p>
+        : cards.map((c, i) => (
+          <div key={c.slug} style={{ ...cardStyle, padding: 14, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 14 }}>
+            <span style={{ fontSize: 20 }}>{c.flag}</span>
+            <div style={{ flex: 1 }}>
+              <span style={{ color: colors.text, fontSize: 14, fontWeight: 600 }}>{c.name}</span>
+              <span style={{ ...badge(c.sport === 'football' ? colors.info : colors.accent), marginLeft: 10 }}>
+                {c.sport.toUpperCase()}
+              </span>
+              <span style={{ ...badge(c.is_visible ? colors.success : colors.textDim), marginLeft: 6 }}>
+                {c.is_visible ? 'VISIBLE' : 'HIDDEN'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => move(i, -1)} disabled={i === 0} style={actionBtn(colors.surfaceAlt, colors.textMuted)}>↑</button>
+              <button onClick={() => move(i, 1)} disabled={i === cards.length - 1} style={actionBtn(colors.surfaceAlt, colors.textMuted)}>↓</button>
+              <button onClick={() => toggleVisible(c)} style={actionBtn(c.is_visible ? colors.warning + '15' : colors.success + '15', c.is_visible ? colors.warning : colors.success)}>
+                {c.is_visible ? 'Hide' : 'Show'}
+              </button>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  );
+}
+
 // ── Home Sections ───────────────────────────────────────────────
 
 function HomeSectionsSection() {
@@ -452,6 +528,7 @@ export default function HomeContentPage() {
       <h2 style={{ color: colors.text, fontSize: 20, fontWeight: 800, marginBottom: 24 }}>🏠 Home Content</h2>
       <FactsSection />
       <LeaguePrioritySection />
+      <LeagueCardsSection />
       <HomeSectionsSection />
       <AccuracySection />
     </div>
