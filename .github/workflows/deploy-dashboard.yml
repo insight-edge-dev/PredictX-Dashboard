@@ -1,0 +1,36 @@
+name: Deploy Dashboard
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.2.0
+
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+
+          script: |
+            cd /var/www/predictx/dashboard/PredictX-Dashboard
+
+            git fetch origin
+            git reset --hard origin/main
+
+            npm install
+
+            npm run build
+
+            sudo systemctl reload nginx
+
+            echo "✅ Dashboard deployed successfully"
