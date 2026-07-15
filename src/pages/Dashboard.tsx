@@ -8,9 +8,10 @@ import UsersPage from './UsersPage';
 import MatchesPage from './MatchesPage';
 import HealthPage from './HealthPage';
 import HomeContentPage from './HomeContentPage';
+import CommentsPage from './CommentsPage';
 import { colors } from '../theme';
 
-export type Page = 'overview' | 'predictions' | 'notifications' | 'banners' | 'users' | 'matches' | 'health' | 'home-content';
+export type Page = 'overview' | 'predictions' | 'notifications' | 'banners' | 'users' | 'matches' | 'health' | 'home-content' | 'comments';
 
 export default function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [page, setPage] = useState<Page>('overview');
@@ -28,6 +29,7 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
         {page === 'matches'       && <MatchesPage />}
         {page === 'health'        && <HealthPage />}
         {page === 'home-content'  && <HomeContentPage />}
+        {page === 'comments'      && <CommentsPage />}
       </div>
     </div>
   );

@@ -1,11 +1,15 @@
-import { API_BASE, ADMIN_KEY } from './config';
+import { API_BASE } from './config';
+
+function getStoredKey(): string {
+  return sessionStorage.getItem('predictx_admin_token') ?? '';
+}
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
       'Content-Type': 'application/json',
-      'x-admin-key':  ADMIN_KEY,
+      'x-admin-key':  getStoredKey(),
     },
     body: body ? JSON.stringify(body) : undefined,
   });
@@ -29,7 +33,7 @@ export async function uploadBannerImage(file: File): Promise<{ url: string; publ
   form.append('image', file);
   const res = await fetch(`${API_BASE}/admin/banners/upload`, {
     method: 'POST',
-    headers: { 'x-admin-key': ADMIN_KEY },
+    headers: { 'x-admin-key': getStoredKey() },
     body: form,
   });
   if (!res.ok) {

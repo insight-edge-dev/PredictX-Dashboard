@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
-import { colors, cardStyle, badge, actionBtn } from '../theme';
+import { colors, cardStyle, labelStyle, inputStyle, badge, actionBtn } from '../theme';
 import type { LeagueMonitorEntry } from './MatchesPage';
 
 interface JobStatus {
@@ -56,6 +56,15 @@ export default function HealthPage() {
   const [error, setError] = useState('');
   const [refreshingSlug, setRefreshingSlug] = useState<string | null>(null);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [maintenanceAction, setMaintenanceAction] = useState<string | null>(null);
+  const [maintenanceMsg, setMaintenanceMsg] = useState('');
+
+  // Prediction resolver state
+  const [resolveRunning, setResolveRunning]     = useState(false);
+  const [resolveMsg, setResolveMsg]             = useState('');
+  const [resolveMatchId, setResolveMatchId]     = useState('');
+  const [resolveWinner, setResolveWinner]       = useState('');
+  const [resolveMatchLoading, setResolveMatchLoading] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -76,6 +85,21 @@ export default function HealthPage() {
       setError(e.message);
     } finally {
       setRefreshingSlug(null);
+    }
+  }
+
+  async function handleMaintenance(action: string, label: string, endpoint: string) {
+    if (!window.confirm(`${label} — are you sure? This cannot be undone.`)) return;
+    setMaintenanceAction(action);
+    setMaintenanceMsg('');
+    try {
+      const res = await api.post(endpoint, {}) as { message?: string };
+      setMaintenanceMsg(res.message ?? 'Done');
+      load();
+    } catch (e: any) {
+      setMaintenanceMsg(`Error: ${e.message}`);
+    } finally {
+      setMaintenanceAction(null);
     }
   }
 
@@ -182,6 +206,118 @@ export default function HealthPage() {
                 </tbody>
               </table>
             )}
+          </div>
+
+          {/* Maintenance actions */}
+          <h3 style={{ color: colors.text, fontSize: 16, fontWeight: 700, marginBottom: 16, marginTop: 32 }}>Maintenance</h3>
+          {maintenanceMsg && (
+            <p style={{ color: maintenanceMsg.startsWith('Error') ? colors.danger : colors.success, fontSize: 13, marginBottom: 12 }}>
+              {maintenanceMsg}
+            </p>
+          )}
+          <div style={{ ...cardStyle, padding: 16, marginBottom: 32, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+            {[
+              { action: 'flush',        label: 'Flush all caches',    endpoint: '/admin/cache/flush',    danger: false },
+              { action: 'reset',        label: 'Reset matches & squads', endpoint: '/admin/reset-matches', danger: true  },
+              { action: 'fix-squads',   label: 'Fix empty squads',    endpoint: '/admin/fix-empty-squads', danger: false },
+            ].map(({ action, label, endpoint, danger }) => (
+              <button
+                key={action}
+                disabled={maintenanceAction === action}
+                onClick={() => handleMaintenance(action, label, endpoint)}
+                style={{
+                  ...actionBtn(danger ? colors.danger : colors.surfaceAlt, danger ? '#fff' : colors.text),
+                  opacity: maintenanceAction && maintenanceAction !== action ? 0.5 : 1,
+                }}
+              >
+                {maintenanceAction === action ? '…' : label}
+              </button>
+            ))}
+          </div>
+
+          {/* Prediction Resolver */}
+          <h3 style={{ color: colors.text, fontSize: 16, fontWeight: 700, marginBottom: 4, marginTop: 32 }}>Prediction Resolver</h3>
+          <p style={{ color: colors.textDim, fontSize: 12, marginBottom: 16 }}>
+            Runs automatically every 30 min. Use "Run Now" after a big match finishes to resolve user predictions immediately.
+          </p>
+          {resolveMsg && (
+            <p style={{ color: resolveMsg.startsWith('✓') ? colors.success : colors.danger, fontSize: 13, marginBottom: 12 }}>
+              {resolveMsg}
+            </p>
+          )}
+          <div style={{ ...cardStyle, padding: 16, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ color: colors.text, fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Auto-scan all pending predictions</div>
+                <div style={{ color: colors.textDim, fontSize: 12 }}>Checks every cricket league + international bucket + football matches and resolves any finished ones.</div>
+              </div>
+              <button
+                disabled={resolveRunning}
+                onClick={async () => {
+                  setResolveRunning(true);
+                  setResolveMsg('');
+                  try {
+                    const res = await api.post('/admin/resolve-scan', {}) as { resolved?: number; message?: string };
+                    setResolveMsg(`✓ ${res.message ?? 'Scan complete'}`);
+                  } catch (e: any) {
+                    setResolveMsg('Error: ' + e.message);
+                  } finally {
+                    setResolveRunning(false);
+                    setTimeout(() => setResolveMsg(''), 8000);
+                  }
+                }}
+                style={{ ...actionBtn(colors.accent + '20', colors.accent), fontWeight: 700, whiteSpace: 'nowrap' }}
+              >
+                {resolveRunning ? '⏳ Running…' : '▶ Run Now'}
+              </button>
+            </div>
+          </div>
+          <div style={{ ...cardStyle, padding: 16, marginBottom: 32 }}>
+            <div style={{ color: colors.text, fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Manually resolve a specific match</div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div>
+                <label style={labelStyle}>MATCH ID</label>
+                <input
+                  value={resolveMatchId}
+                  onChange={e => setResolveMatchId(e.target.value)}
+                  placeholder="e.g. 556789 or wc26_001"
+                  style={{ ...inputStyle, width: 200 }}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>WINNER (exact team name or "draw" or "void")</label>
+                <input
+                  value={resolveWinner}
+                  onChange={e => setResolveWinner(e.target.value)}
+                  placeholder='e.g. Spain, India, draw, void'
+                  style={{ ...inputStyle, width: 240 }}
+                />
+              </div>
+              <button
+                disabled={resolveMatchLoading || !resolveMatchId.trim() || !resolveWinner.trim()}
+                onClick={async () => {
+                  setResolveMatchLoading(true);
+                  setResolveMsg('');
+                  try {
+                    const res = await api.post('/admin/resolve-match', { matchId: resolveMatchId.trim(), winner: resolveWinner.trim() }) as { resolved?: number };
+                    setResolveMsg(`✓ Match ${resolveMatchId} resolved — ${res.resolved ?? 0} prediction(s) updated`);
+                    setResolveMatchId('');
+                    setResolveWinner('');
+                  } catch (e: any) {
+                    setResolveMsg('Error: ' + e.message);
+                  } finally {
+                    setResolveMatchLoading(false);
+                    setTimeout(() => setResolveMsg(''), 6000);
+                  }
+                }}
+                style={{ ...actionBtn(colors.surfaceAlt, colors.text), alignSelf: 'flex-end' }}
+              >
+                {resolveMatchLoading ? '…' : 'Resolve'}
+              </button>
+            </div>
+            <p style={{ color: colors.textDim, fontSize: 11, marginTop: 8 }}>
+              Winner must match exactly what users picked — check Supabase <code>user_match_predictions.predicted_winner</code> for the exact string.
+            </p>
           </div>
 
           {/* Cache entries, grouped by key prefix */}

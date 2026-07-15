@@ -1,18 +1,31 @@
 import { useState } from 'react';
-import { ADMIN_USER, ADMIN_PASS } from '../config';
+import { API_BASE } from '../config';
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
-  const [user, setUser]   = useState('');
-  const [pass, setPass]   = useState('');
-  const [error, setError] = useState('');
+  const [user, setUser]       = useState('');
+  const [pass, setPass]       = useState('');
+  const [error, setError]     = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (user === ADMIN_USER && pass === ADMIN_PASS) {
+    setError('');
+    setLoading(true);
+    try {
+      const res  = await fetch(`${API_BASE}/admin/login`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ user, pass }),
+      });
+      const json = await res.json();
+      if (!res.ok) { setError(json.error ?? 'Login failed'); return; }
       sessionStorage.setItem('predictx_admin', '1');
+      sessionStorage.setItem('predictx_admin_token', json.token);
       onLogin();
-    } else {
-      setError('Invalid credentials');
+    } catch {
+      setError('Network error — backend unreachable');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -52,8 +65,8 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             />
           </div>
           {error && <p style={{ color: '#ef4444', fontSize: 13, marginBottom: 16, textAlign: 'center' }}>{error}</p>}
-          <button type="submit" style={btnStyle}>
-            Sign In
+          <button type="submit" disabled={loading} style={{ ...btnStyle, opacity: loading ? 0.7 : 1 }}>
+            {loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
       </div>

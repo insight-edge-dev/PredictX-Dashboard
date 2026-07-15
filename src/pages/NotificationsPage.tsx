@@ -21,6 +21,12 @@ export default function NotificationsPage() {
   const [loading,  setLoading]  = useState(false);
   const [msg,      setMsg]      = useState('');
 
+  // Push broadcast state
+  const [pushTitle,   setPushTitle]   = useState('');
+  const [pushBody,    setPushBody]    = useState('');
+  const [pushLoading, setPushLoading] = useState(false);
+  const [pushMsg,     setPushMsg]     = useState('');
+
   const load = async () => {
     try {
       const res = await api.get<{ notifications: Notification[] }>('/admin/notifications');
@@ -59,6 +65,25 @@ export default function NotificationsPage() {
   const del = async (id: string) => {
     await api.delete(`/admin/notifications/${id}`);
     load();
+  };
+
+  const sendPushBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pushTitle.trim() || !pushBody.trim()) return;
+    setPushLoading(true);
+    try {
+      const res = await api.post<{ queued: number }>('/admin/push-broadcast', {
+        title: pushTitle.trim(),
+        body:  pushBody.trim(),
+      });
+      setPushTitle(''); setPushBody('');
+      setPushMsg(`✓ Queued for ${res.queued} device(s)`);
+    } catch (e: any) {
+      setPushMsg('Error: ' + e.message);
+    } finally {
+      setPushLoading(false);
+      setTimeout(() => setPushMsg(''), 4000);
+    }
   };
 
   const fmt = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -127,6 +152,28 @@ export default function NotificationsPage() {
         {msg && <p style={{ color: msg.startsWith('✓') ? colors.success : colors.danger, fontSize: 13, marginBottom: 12 }}>{msg}</p>}
         <button type="submit" disabled={loading || !title.trim() || !body.trim()} style={btnStyle(loading || !title.trim() || !body.trim())}>
           {loading ? 'Sending…' : 'Send Notification'}
+        </button>
+      </form>
+
+      {/* Push Broadcast */}
+      <h2 style={{ color: colors.text, fontSize: 20, fontWeight: 800, marginBottom: 8 }}>📱 Push Broadcast</h2>
+      <p style={{ color: colors.textMuted, fontSize: 13, marginBottom: 16 }}>
+        Send a native push notification to all users who have "App Announcements" enabled on their device.
+      </p>
+      <form onSubmit={sendPushBroadcast} style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 24, marginBottom: 40 }}>
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>TITLE</label>
+          <input value={pushTitle} onChange={e => setPushTitle(e.target.value)} placeholder="Announcement title..." style={inputStyle} maxLength={80} />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <label style={labelStyle}>MESSAGE</label>
+          <textarea value={pushBody} onChange={e => setPushBody(e.target.value)} placeholder="Push notification message..." rows={3}
+            style={{ ...inputStyle, resize: 'vertical', minHeight: 72 }} maxLength={200} />
+          <div style={{ color: colors.textDim, fontSize: 11, marginTop: 4 }}>{pushBody.length}/200</div>
+        </div>
+        {pushMsg && <p style={{ color: pushMsg.startsWith('✓') ? colors.success : colors.danger, fontSize: 13, marginBottom: 12 }}>{pushMsg}</p>}
+        <button type="submit" disabled={pushLoading || !pushTitle.trim() || !pushBody.trim()} style={btnStyle(pushLoading || !pushTitle.trim() || !pushBody.trim())}>
+          {pushLoading ? 'Sending…' : 'Send Push Broadcast'}
         </button>
       </form>
 
