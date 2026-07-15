@@ -15,22 +15,24 @@ jobs:
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.0
-
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-
           script: |
+            set -e
+
+            echo "📦 Deploying Dashboard..."
+
             cd /var/www/predictx/dashboard/PredictX-Dashboard
 
             git fetch origin
             git reset --hard origin/main
 
-            npm install
+            npm ci || npm install
 
             npm run build
 
             sudo systemctl reload nginx
 
-            echo "✅ Dashboard deployed successfully"
+            echo "✅ Dashboard deployment completed!"
